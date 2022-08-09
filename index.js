@@ -1,6 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+const Contact = require("./models/contact");
 const app = express();
 
 app.use(express.json());
@@ -23,92 +25,46 @@ app.use(
   )
 );
 
-//utils
-const generateId = () => {
-  const idRange = 100;
-
-  const getRandomInt = () => Math.floor(Math.random() * idRange);
-
-  let newId = getRandomInt();
-
-  while (persons.find((person) => person.id === newId)) {
-    newId = getRandomInt();
-  }
-
-  return newId;
-};
-
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
-app.get("/api/persons", (req, res) => {
-  res.json(persons);
+app.get("/api/contacts", (req, res) => {
+  Contact.find({}).then((people) => {console.log(people); res.json(people)});
 });
 
 app.get("/info", (req, res) => {
-  const entries = `Phonebook has info for ${persons.length} people`;
-  const today = new Date();
+  Contact.find({}).then((people) => {
+    const entries = `Phonebook has info for ${people.length} people`;
+    const today = new Date();
 
-  res.send(`<p>${entries}</p> <p>${today}</p>`);
+    res.send(`<p>${entries}</p> <p>${today}</p>`);
+  });
 });
 
-app.get("/api/persons/:id", (req, res) => {
-  const person = persons.find((person) => person.id === Number(req.params.id));
-
-  if (person) res.json(person);
-  else res.status(404).end();
+app.get("/api/contacts/:id", (req, res) => {
+  Contact.findById(req.params.id).then((person) => res.json(person));
 });
 
-app.delete("/api/persons/:id", (req, res) => {
+app.delete("/api/contacts/:id", (req, res) => {
   persons = persons.filter((person) => person.id !== Number(req.params.id));
 
   res.status(204).end();
 });
 
-app.post("/api/persons", (req, res) => {
+app.post("/api/contacts", (req, res) => {
   const body = req.body;
 
   if (!(body.name && body.number)) {
     return res.status(400).json({ error: "missing person name and/or number" });
   }
 
-  if (persons.find((person) => person.name === body.name)) {
-    return res.status(400).json({ error: "this person already exists" });
-  }
-
-  const person = {
+  const newContact = new Contact({
     name: body.name,
     number: body.number,
-    id: generateId(),
-  };
+  });
 
-  persons = persons.concat(person);
-
-  res.json(person);
+  newContact.save().then((contact) => res.json(contact));
 });
 
 // use after routing
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT);
