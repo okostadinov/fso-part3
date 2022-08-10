@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const url = process.env.NOTES_MONGODB_URL;
 
 mongoose
   .connect(url)
-  .then(() => console.log("successfully connected to database"))
+  .then(() => console.log('successfully connected to database'))
   .catch((err) => console.log(`connection to database unsuccessful ${err}`));
 
 const contactSchema = new mongoose.Schema({
@@ -26,7 +26,7 @@ const contactSchema = new mongoose.Schema({
   },
 });
 
-contactSchema.set("toJSON", {
+contactSchema.set('toJSON', {
   transform: (document, obj) => {
     obj.id = obj._id.toString();
     delete obj._id;
@@ -34,6 +34,6 @@ contactSchema.set("toJSON", {
   },
 });
 
-const Contact = mongoose.model("Contact", contactSchema);
+const Contact = mongoose.model('Contact', contactSchema);
 
 module.exports = Contact;

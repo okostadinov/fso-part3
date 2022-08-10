@@ -1,40 +1,40 @@
-require("dotenv").config();
-const express = require("express");
-const morgan = require("morgan");
-const cors = require("cors");
-const Contact = require("./models/contact");
+require('dotenv').config();
+const express = require('express');
+const morgan = require('morgan');
+const cors = require('cors');
+const Contact = require('./models/contact');
 const app = express();
 
 /***** MIDDLEWARE PRE-ROUTING *****/
 
 app.use(express.json());
 app.use(cors());
-app.use(express.static("build"));
+app.use(express.static('build'));
 
 /***** UTILITIES *****/
 
 // custom morgan token
-morgan.token("custom-res-content", (req, res) => {
+morgan.token('custom-res-content', (req) => {
   return JSON.stringify(req.body);
 });
 
 app.use(
   morgan(
-    ":method :url :res[content-length] - :response-time ms :custom-res-content"
+    ':method :url :res[content-length] - :response-time ms :custom-res-content'
   )
 );
 
 /***** ROUTES *****/
 
 // fetch all
-app.get("/api/contacts", (req, res) => {
+app.get('/api/contacts', (req, res) => {
   Contact.find({}).then((contacts) => {
     res.json(contacts);
   });
 });
 
 // display additional info
-app.get("/info", (req, res, next) => {
+app.get('/info', (req, res, next) => {
   Contact.find({})
     .then((contacts) => {
       const entries = `Phonebook has info for ${contacts.length} contacts`;
@@ -46,25 +46,25 @@ app.get("/info", (req, res, next) => {
 });
 
 // fetch specific
-app.get("/api/contacts/:id", (req, res, next) => {
+app.get('/api/contacts/:id', (req, res, next) => {
   Contact.findById(req.params.id)
     .then((contact) => res.json(contact))
     .catch((err) => next(err));
 });
 
 // delete entry
-app.delete("/api/contacts/:id", (req, res) => {
+app.delete('/api/contacts/:id', (req, res, next) => {
   Contact.findByIdAndRemove(req.params.id)
     .then(() => res.status(204).end())
     .catch((err) => next(err));
 });
 
 // add entry
-app.post("/api/contacts", (req, res, next) => {
+app.post('/api/contacts', (req, res, next) => {
   if (!(req.body.name && req.body.number)) {
     return res
       .status(400)
-      .json({ error: "missing contact name and/or number" });
+      .json({ error: 'missing contact name and/or number' });
   }
 
   const newContact = new Contact({
@@ -79,7 +79,7 @@ app.post("/api/contacts", (req, res, next) => {
 });
 
 // update entry
-app.put("/api/contacts/:id", (req, res, next) => {
+app.put('/api/contacts/:id', (req, res, next) => {
   const { name, number } = req.body;
 
   Contact.findByIdAndUpdate(
@@ -88,7 +88,7 @@ app.put("/api/contacts/:id", (req, res, next) => {
     {
       new: true,
       runValidators: true,
-      context: "query",
+      context: 'query',
     }
   )
     .then((updatedContact) => res.json(updatedContact))
@@ -98,8 +98,8 @@ app.put("/api/contacts/:id", (req, res, next) => {
 /***** MIDDLEWARE POST-ROUTING *****/
 
 // handles unknown url endpoints
-const unknownEndpoint = (req, res, next) => {
-  res.status(404).send({ error: "unknown endpoint" });
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' });
 };
 
 app.use(unknownEndpoint);
@@ -108,9 +108,9 @@ app.use(unknownEndpoint);
 const errorHandling = (err, req, res, next) => {
   console.log(err.message);
 
-  if (err.name === "CastError") {
-    return res.status(400).send({ error: "malformatted id" });
-  } else if (err.name === "ValidationError") {
+  if (err.name === 'CastError') {
+    return res.status(400).send({ error: 'malformatted id' });
+  } else if (err.name === 'ValidationError') {
     return res.status(400).send({ error: err.message });
   }
 
