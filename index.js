@@ -60,7 +60,7 @@ app.delete("/api/contacts/:id", (req, res) => {
 });
 
 // add entry
-app.post("/api/contacts", (req, res) => {
+app.post("/api/contacts", (req, res, next) => {
   if (!(req.body.name && req.body.number)) {
     return res
       .status(400)
@@ -72,17 +72,25 @@ app.post("/api/contacts", (req, res) => {
     number: req.body.number,
   });
 
-  newContact.save().then((contact) => res.json(contact));
+  newContact
+    .save()
+    .then((contact) => res.json(contact))
+    .catch((err) => next(err));
 });
 
 // update entry
 app.put("/api/contacts/:id", (req, res, next) => {
-  const contact = {
-    name: req.body.name,
-    number: req.body.number,
-  };
+  const { name, number } = req.body;
 
-  Contact.findByIdAndUpdate(req.params.id, contact, { new: true })
+  Contact.findByIdAndUpdate(
+    req.params.id,
+    { name, number },
+    {
+      new: true,
+      runValidators: true,
+      context: "query",
+    }
+  )
     .then((updatedContact) => res.json(updatedContact))
     .catch((err) => next(err));
 });
@@ -102,6 +110,8 @@ const errorHandling = (err, req, res, next) => {
 
   if (err.name === "CastError") {
     return res.status(400).send({ error: "malformatted id" });
+  } else if (err.name === "ValidationError") {
+    return res.status(400).send({ error: err.message });
   }
 
   next(err);
