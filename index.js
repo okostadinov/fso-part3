@@ -5,17 +5,16 @@ const cors = require("cors");
 const Contact = require("./models/contact");
 const app = express();
 
+/***** MIDDLEWARE PRE-ROUTING *****/
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static("build"));
 
-// custom middleware
-const unknownEndpoint = (req, res, next) => {
-  res.status(404).send({ error: "unknown endpoint" });
-};
+/***** UTILITIES *****/
 
 // custom morgan token
-morgan.token("custom-res-content", (req) => {
+morgan.token("custom-res-content", (req, res) => {
   return JSON.stringify(req.body);
 });
 
@@ -25,46 +24,92 @@ app.use(
   )
 );
 
+/***** ROUTES *****/
+
+// fetch all
 app.get("/api/contacts", (req, res) => {
-  Contact.find({}).then((people) => {console.log(people); res.json(people)});
-});
-
-app.get("/info", (req, res) => {
-  Contact.find({}).then((people) => {
-    const entries = `Phonebook has info for ${people.length} people`;
-    const today = new Date();
-
-    res.send(`<p>${entries}</p> <p>${today}</p>`);
+  Contact.find({}).then((contacts) => {
+    res.json(contacts);
   });
 });
 
-app.get("/api/contacts/:id", (req, res) => {
-  Contact.findById(req.params.id).then((person) => res.json(person));
+// display additional info
+app.get("/info", (req, res, next) => {
+  Contact.find({})
+    .then((contacts) => {
+      const entries = `Phonebook has info for ${contacts.length} contacts`;
+      const today = new Date();
+
+      res.send(`<p>${entries}</p> <p>${today}</p>`);
+    })
+    .catch((err) => next(err));
 });
 
+// fetch specific
+app.get("/api/contacts/:id", (req, res, next) => {
+  Contact.findById(req.params.id)
+    .then((contact) => res.json(contact))
+    .catch((err) => next(err));
+});
+
+// delete entry
 app.delete("/api/contacts/:id", (req, res) => {
-  persons = persons.filter((person) => person.id !== Number(req.params.id));
-
-  res.status(204).end();
+  Contact.findByIdAndRemove(req.params.id)
+    .then(() => res.status(204).end())
+    .catch((err) => next(err));
 });
 
+// add entry
 app.post("/api/contacts", (req, res) => {
-  const body = req.body;
-
-  if (!(body.name && body.number)) {
-    return res.status(400).json({ error: "missing person name and/or number" });
+  if (!(req.body.name && req.body.number)) {
+    return res
+      .status(400)
+      .json({ error: "missing contact name and/or number" });
   }
 
   const newContact = new Contact({
-    name: body.name,
-    number: body.number,
+    name: req.body.name,
+    number: req.body.number,
   });
 
   newContact.save().then((contact) => res.json(contact));
 });
 
-// use after routing
+// update entry
+app.put("/api/contacts/:id", (req, res, next) => {
+  const contact = {
+    name: req.body.name,
+    number: req.body.number,
+  };
+
+  Contact.findByIdAndUpdate(req.params.id, contact, { new: true })
+    .then((updatedContact) => res.json(updatedContact))
+    .catch((err) => next(err));
+});
+
+/***** MIDDLEWARE POST-ROUTING *****/
+
+// handles unknown url endpoints
+const unknownEndpoint = (req, res, next) => {
+  res.status(404).send({ error: "unknown endpoint" });
+};
+
 app.use(unknownEndpoint);
+
+// handles request catch block
+const errorHandling = (err, req, res, next) => {
+  console.log(err.message);
+
+  if (err.name === "CastError") {
+    return res.status(400).send({ error: "malformatted id" });
+  }
+
+  next(err);
+};
+
+app.use(errorHandling);
+
+/***** START *****/
 
 const PORT = process.env.PORT;
 app.listen(PORT);

@@ -1,0 +1,17 @@
+PUT http://localhost:3001/api/contacts/62f3971b5c76b5731334f0e8
+Content-Type: application/json
+
+{
+    "name": "Oleg Kostadinov",
+    "number": "33333333333333333"
+}
+
+###
+
+PUT http://localhost:3001/api/contacts/321
+Content-Type: application/json
+
+{
+    "name": "Someone who doesn't exist",
+    "number": "21111111111"
+}
